@@ -1,4 +1,5 @@
 import typer 
+from typing import Optional
 import logging
 import polars as pl
 from config import USERNO_MAP
@@ -7,7 +8,7 @@ from utils import find_filenames_by_ext
 app = typer.Typer()
 
 @app.command()
-def display_payment_history(name: str) -> None:
+def display_payment_history(name: str, category: Optional[str] = None) -> None:
     ph_df = pl.DataFrame()
     filenames = find_filenames_by_ext("data", ".csv")
     for filename in filenames:
@@ -18,6 +19,8 @@ def display_payment_history(name: str) -> None:
             cardno = USERNO_MAP.filter(pl.col("name") == name).select(pl.col("cardno")).row(0)[0]
             ph_df_by_file = pl.read_csv(filename).filter(pl.col("Card No.") == cardno)
         ph_df = pl.concat([ph_df, ph_df_by_file]).unique()
+    if category: 
+        ph_df = ph_df.filter(pl.col("Category") == category)
     print(ph_df)
     totals = ph_df.select(pl.col("Debit", "Credit").sum())
     print(totals)
